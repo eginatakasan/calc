@@ -1,0 +1,22 @@
+{
+  "configurations": [
+    {
+      "type": "lldb",
+      "request": "launch",
+      "args": [],
+      "cwd": "${workspaceFolder:calc}",
+      "name": "Debug Calculator",
+      "program": "${workspaceFolder:calc}/.build/debug/Calculator",
+      "preLaunchTask": "swift: Build Debug Calculator"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "args": [],
+      "cwd": "${workspaceFolder:calc}",
+      "name": "Release Calculator",
+      "program": "${workspaceFolder:calc}/.build/release/Calculator",
+      "preLaunchTask": "swift: Build Release Calculator"
+    }
+  ]
+}

@@ -1,15 +1,23 @@
-//
-//  main.swift
-//  calc
-//
-//  Created by Jesse Clark on 12/3/18.
-//  Copyright © 2018 UTS. All rights reserved.
-//
-
 import Foundation
 
 var args = ProcessInfo.processInfo.arguments
-args.removeFirst() // remove the name of the program
+args.removeFirst()
+let calculator = Calculator()
 
-print(Int(args[0])!)
-print("Hello world!")
+do {
+    // Calculate the result
+    let result = try calculator.calculate(args: args)
+    print(result)
+} catch CalculatorError.invalidInput {
+    print("invalid input")
+    exit(1)
+} catch CalculatorError.divisionByZero {
+    print("division by zero")
+    exit(1)
+} catch CalculatorError.integerOverflow {
+    print("integer overflow")
+    exit(1)
+} catch {
+    print("unknown error")
+    exit(1)
+}

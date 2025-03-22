@@ -1,11 +1,5 @@
 import Foundation
 
-enum CalculatorError: Error {
-    case invalidInput
-    case divisionByZero
-    case integerOverflow
-}
-
 class InputParser {
     static let validOperators = ["+", "-", "x", "/", "%"]
     
@@ -15,14 +9,13 @@ class InputParser {
             return false
         }
         
-        // Single number is valid
+        // Single argument is valid only if it's a number
         if args.count == 1 {
-            return isValidNumber(args[0])
+            return parseNumber(args[0]) != nil
         }
         
-        // For operations, we need at least 3 arguments (number operator number)
         if args.count < 3 {
-            return false
+            return false;
         }
         
         // Check if the pattern is valid: number operator number (operator number)*

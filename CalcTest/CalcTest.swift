@@ -7,12 +7,28 @@
 //
 
 import XCTest
-import GameKit // for deterministic random number generator
 
-let randomSource = GKLinearCongruentialRandomSource(seed: 9)
+// Remove GameKit dependency and use Swift's built-in random with upperBound
+let randomSource = { (upperBound: Int) -> Int in
+    return Int.random(in: 0..<upperBound)
+}
 
-let calcBundle = Bundle(identifier: "UTS.CalcTest")!
-let calcPath = ProcessInfo.processInfo.environment["CALC_PATH"] ?? calcBundle.path(forResource: "calc", ofType: nil)
+// Get the path to the calculator executable
+let calcPath: String = {
+    let envPath = ProcessInfo.processInfo.environment["CALC_PATH"]
+    if let path = envPath {
+        return path
+    }
+    
+    // When running from swift test, the executable will be in the debug folder
+    let debugPath = ".build/debug/Calculator"
+    if FileManager.default.fileExists(atPath: debugPath) {
+        return debugPath
+    }
+    
+    // Default to local path
+    return "./calculator"
+}()
 
 enum calcError: Error {
     case exitStatus(Int32)
@@ -85,26 +101,26 @@ class calcProcess {
 
 class CalcTest: XCTestCase {
     func testParseInteger() {
-        let n1 = randomSource.nextInt(upperBound:100)
+        let n1 = randomSource(100)
         let task1 = calcProcess(n1)
         XCTAssertEqual(task1.output, String(n1), task1.input)
         
-        let n2 = randomSource.nextInt(upperBound:100)
+        let n2 = randomSource(100)
         let task2 = calcProcess("+\(n2)")
         XCTAssertEqual(task2.output, String(n2), task2.input)
         
-        let n3 = -randomSource.nextInt(upperBound:100)
+        let n3 = -randomSource(100)
         let task3 = calcProcess(n3)
         XCTAssertEqual(task3.output, String(n3), task3.input)
         
         let task4 = calcProcess(0)
         XCTAssertEqual(task4.output, String(0), task4.input)
         
-        let n5 = Int(Int32.max) - randomSource.nextInt(upperBound:1000)
+        let n5 = Int(Int32.max) - randomSource(1000)
         let task5 = calcProcess(n5)
         XCTAssertEqual(task5.output, String(n5), task5.input)
         
-        let n6 = Int(Int32.min) + randomSource.nextInt(upperBound:1000)
+        let n6 = Int(Int32.min) + randomSource(1000)
         let task6 = calcProcess(n6)
         XCTAssertEqual(task6.output, String(n6), task6.input)
     }
@@ -117,11 +133,11 @@ class CalcTest: XCTestCase {
         XCTAssertNil(task.status, "exit with zero status on valid input: \(task.input)")
         
         // expect out-of-bounds parsing to emit an error
-        task = calcProcess("\(Int.max)\(randomSource.nextInt(upperBound:90)+10)")
+        task = calcProcess("\(Int.max)\(randomSource(90)+10)")
         XCTAssertNotNil(task.status, "exit with nonzero status on invalid input: \(task.input)")
         XCTAssert(task.status != calcError.timeout, "exit with nonzero status on invalid input: \(task.input)")
         
-        task = calcProcess("-\(Int.max)\(randomSource.nextInt(upperBound:90)+10)")
+        task = calcProcess("-\(Int.max)\(randomSource(90)+10)")
         XCTAssertNotNil(task.status, "exit with nonzero status on invalid input: \(task.input)")
         XCTAssert(task.status != calcError.timeout, "exit with nonzero status on invalid input: \(task.input)")
         
@@ -177,10 +193,10 @@ class CalcTest: XCTestCase {
     
     func testAdd() {
         var task: calcProcess
-        let n1 = randomSource.nextInt(upperBound:100)
-        let n2 = randomSource.nextInt(upperBound:100)
-        let n3 = randomSource.nextInt(upperBound:100)-100
-        let n4 = randomSource.nextInt(upperBound:100)-100
+        let n1 = randomSource(100)
+        let n2 = randomSource(100)
+        let n3 = randomSource(100)-100
+        let n4 = randomSource(100)-100
         
         task = calcProcess(n1, "+", n2)
         XCTAssertEqual(task.output, String(n1 + n2), task.input)
@@ -213,7 +229,7 @@ class CalcTest: XCTestCase {
         var nums: [Int] = []
         var args: [String] = []
         for _ in 0...20 {
-            let n = randomSource.nextInt(upperBound:10000) - 50000
+            let n = randomSource(10000) - 50000
             nums.append(n)
             if args.count > 0 {
                 args.append("+")
@@ -229,10 +245,10 @@ class CalcTest: XCTestCase {
 
     func testSubtract() {
         var task: calcProcess
-        let n1 = randomSource.nextInt(upperBound:100)
-        let n2 = randomSource.nextInt(upperBound:100)
-        let n3 = randomSource.nextInt(upperBound:100)-100
-        let n4 = randomSource.nextInt(upperBound:100)-100
+        let n1 = randomSource(100)
+        let n2 = randomSource(100)
+        let n3 = randomSource(100)-100
+        let n4 = randomSource(100)-100
         
         task = calcProcess(n1, "-", n2)
         XCTAssertEqual(task.output, String(n1 - n2), task.input)
@@ -258,7 +274,7 @@ class CalcTest: XCTestCase {
         var nums: [Int] = []
         var args: [String] = []
         for _ in 0...20 {
-            let n = randomSource.nextInt(upperBound:10000) - 5000
+            let n = randomSource(10000) - 5000
             nums.append(n)
             if args.count > 0 {
                 args.append("-")
@@ -279,7 +295,7 @@ class CalcTest: XCTestCase {
         var nums: [Int] = []
         var args: [String] = []
         for _ in 0...20 {
-            let n = randomSource.nextInt(upperBound:10000) - 5000
+            let n = randomSource(10000) - 5000
             nums.append(n)
             if args.count > 0 {
                 args.append("-")
@@ -297,9 +313,9 @@ class CalcTest: XCTestCase {
 
     func testMultiply() {
         var task: calcProcess
-        let n1 = randomSource.nextInt(upperBound:100)+1
-        let n2 = randomSource.nextInt(upperBound:100)+1
-        let n3 = randomSource.nextInt(upperBound:100)-101
+        let n1 = randomSource(50) + 5
+        let n2 = randomSource(50) + 5
+        let n3 = randomSource(100) - 101
         
         task = calcProcess(n1, "x", n2)
         XCTAssertEqual(task.output, String(n1 * n2), task.input)
@@ -320,7 +336,7 @@ class CalcTest: XCTestCase {
         var nums: [Int] = []
         var args: [String] = []
         for _ in 0...10 {
-            let n = randomSource.nextInt(upperBound:20)+1
+            let n = randomSource(20)+1
             nums.append(n)
             if args.count > 0 {
                 args.append("x")
@@ -337,9 +353,9 @@ class CalcTest: XCTestCase {
     
     func testDivide() {
         var task: calcProcess
-        let n1 = randomSource.nextInt(upperBound:4096) + 300
-        let n2 = randomSource.nextInt(upperBound:256) + 20
-        let n3 = randomSource.nextInt(upperBound:16) + 1
+        let n1 = randomSource(4096) + 300
+        let n2 = randomSource(256) + 20
+        let n3 = randomSource(16) + 1
         
         task = calcProcess(n1, "/", n2)
         XCTAssertEqual(task.output, String(n1 / n2), task.input)
@@ -355,8 +371,8 @@ class CalcTest: XCTestCase {
     }
     
     func testModulus() {
-        let n1 = randomSource.nextInt(upperBound:100) + 20
-        let n2 = randomSource.nextInt(upperBound:20) + 1
+        let n1 = randomSource(100) + 20
+        let n2 = randomSource(20) + 1
         let task = calcProcess(n1, "%", n2)
         XCTAssertEqual(task.output, String(n1 % n2), task.input)
     }
@@ -366,62 +382,62 @@ class CalcTest: XCTestCase {
         XCTAssertEqual(task0.output, String(0), task0.input)
         XCTAssertNil(task0.status, "exit with zero status: \(task0.input)")
         
-        let n1 = randomSource.nextInt(upperBound:100) + 1
+        let n1 = randomSource(100) + 1
         let task1 = calcProcess(n1, "/", 0)
         XCTAssertNotNil(task1.status, "exit with nonzero status when dividing by zero: \(task1.input)")
         XCTAssert(task1.status != calcError.timeout, "exit with nonzero status when dividing by zero: \(task1.input)")
         
-        let n2 = randomSource.nextInt(upperBound:100) + 1
+        let n2 = randomSource(100) + 1
         let task2 = calcProcess(n2, "%", 0)
         XCTAssertNotNil(task2.status, "exit with nonzero status when dividing by zero: \(task2.input)")
         XCTAssert(task2.status != calcError.timeout, "exit with nonzero status when dividing by zero: \(task2.input)")
     }
     
     func testAddSubtract() {
-        let n1 = randomSource.nextInt(upperBound:100)
-        let n2 = randomSource.nextInt(upperBound:100)
-        let n3 = randomSource.nextInt(upperBound:100)
+        let n1 = randomSource(100)
+        let n2 = randomSource(100)
+        let n3 = randomSource(100)
         let task1 = calcProcess(n1, "+", n2, "-", n3)
         XCTAssertEqual(task1.output, String(n1 + n2 - n3), task1.input)
         
-        let n4 = randomSource.nextInt(upperBound:200)-100
-        let n5 = randomSource.nextInt(upperBound:200)-100
-        let n6 = randomSource.nextInt(upperBound:200)-100
-        let n7 = randomSource.nextInt(upperBound:200)-100
-        let n8 = randomSource.nextInt(upperBound:200)-100
-        let n9 = randomSource.nextInt(upperBound:200)-100
+        let n4 = randomSource(200)-100
+        let n5 = randomSource(200)-100
+        let n6 = randomSource(200)-100
+        let n7 = randomSource(200)-100
+        let n8 = randomSource(200)-100
+        let n9 = randomSource(200)-100
         let task2 = calcProcess(n4, "-", n5, "-", n6, "+", n7, "-", n8, "+", n9)
         XCTAssertEqual(task2.output, String(n4 - n5 - n6 + n7 - n8 + n9), task2.input)
     }
     
     func testMultDivide() {
         // verify that same-precedence is evaluated left-to-right
-        let n1 = randomSource.nextInt(upperBound:50) + 5
-        let n2 = randomSource.nextInt(upperBound:50) + 5
-        let n3 = randomSource.nextInt(upperBound:20) + 1
+        let n1 = randomSource(50) + 5
+        let n2 = randomSource(50) + 5
+        let n3 = randomSource(20) + 1
         let task1 = calcProcess(n1, "x", n2, "/", n3)
         XCTAssertEqual(task1.output, String(n1 * n2 / n3), task1.input)
         
         // verify that same-precedence is evaluated left-to-right
-        let n4 = randomSource.nextInt(upperBound:50) + 5
-        let n5 = randomSource.nextInt(upperBound:50) + 5
-        let n6 = randomSource.nextInt(upperBound:20) + 1
+        let n4 = randomSource(50) + 5
+        let n5 = randomSource(50) + 5
+        let n6 = randomSource(20) + 1
         let task2 = calcProcess(n4, "x", n5, "%", n6)
         XCTAssertEqual(task2.output, String(n4 * n5 % n6), task2.input)
         
         // note: these ops are not the same predence in all languages
-        let n7 = randomSource.nextInt(upperBound:50) + 40
-        let n8 = randomSource.nextInt(upperBound:20) + 20
-        let n9 = randomSource.nextInt(upperBound:20) + 1
+        let n7 = randomSource(50) + 40
+        let n8 = randomSource(20) + 20
+        let n9 = randomSource(20) + 1
         let task3 = calcProcess(n7, "%", n8, "/", n9)
         XCTAssertEqual(task3.output, String((n7 % n8) / n9), task3.input)
     }
     
     func testPrecedence1() {
         // verify that multiplication is evaluated before addition
-        let n1 = randomSource.nextInt(upperBound:100) + 1
-        let n2 = randomSource.nextInt(upperBound:100) + 1
-        let n3 = randomSource.nextInt(upperBound:100) + 1
+        let n1 = randomSource(100) + 1
+        let n2 = randomSource(100) + 1
+        let n3 = randomSource(100) + 1
         
         let task1 = calcProcess(n1, "x", n2, "+", n3)
         XCTAssertEqual(task1.output, String(n1 * n2 + n3), task1.input)
@@ -432,15 +448,15 @@ class CalcTest: XCTestCase {
     
     func testPrecedence2() {
         // verify that division is evaluated before addition or subtraction
-        let n4 = randomSource.nextInt(upperBound:100) + 1
-        let n5 = randomSource.nextInt(upperBound:20) + 20
-        let n6 = randomSource.nextInt(upperBound:20) + 1
-        let n7 = randomSource.nextInt(upperBound:100) + 1
+        let n4 = randomSource(100) + 1
+        let n5 = randomSource(20) + 20
+        let n6 = randomSource(20) + 1
+        let n7 = randomSource(100) + 1
         let task3 = calcProcess(n4, "+", n5, "/", n6, "-", n7)
         XCTAssertEqual(task3.output, String(n4 + n5 / n6 - n7), task3.input)
         
-        let n8 = randomSource.nextInt(upperBound:10)
-        let n9 = randomSource.nextInt(upperBound:10)
+        let n8 = randomSource(10)
+        let n9 = randomSource(10)
         // ((7/3) * 5) % 3
         let n10 = 7
         let n11 = 3
@@ -464,8 +480,8 @@ class CalcTest: XCTestCase {
             max = Int(Int32.max)
         }
         // test additive overflow
-        let n1 = max - randomSource.nextInt(upperBound:50)
-        let n2 = randomSource.nextInt(upperBound:100) + 60
+        let n1 = max - randomSource(50)
+        let n2 = randomSource(100) + 60
         let task1 = calcProcess(n1, "+", n2)
         XCTAssertNotNil(task1.status, "Error on integer overflow: \(task1.input)")
         XCTAssert(task1.status != calcError.timeout, "Error on integer overflow: \(task1.input)")
@@ -475,17 +491,17 @@ class CalcTest: XCTestCase {
         XCTAssert(task2.status != calcError.timeout, "Error on integer overflow: \(task2.input)")
         
         // test additive underflow
-        let n3 = min + randomSource.nextInt(upperBound:50)
-        let n4 = randomSource.nextInt(upperBound:100) + 60
+        let n3 = min + randomSource(50)
+        let n4 = randomSource(100) + 60
         let task3 = calcProcess(n3, "-", n4)
         XCTAssertNotNil(task3.status, "Error on integer underflow: \(task3.input)")
         let task4 = calcProcess(n3, "+", -n4)
         XCTAssertNotNil(task4.status, "Error on integer underflow: \(task4.input)")
         
         // test multiplicative overflow
-        let n5 = Int(Int32.max) - randomSource.nextInt(upperBound:100)
-        let n6 = Int(Int32.max) - randomSource.nextInt(upperBound:100)
-        let n7 = Int(Int32.max) - randomSource.nextInt(upperBound:100)
+        let n5 = Int(Int32.max) - randomSource(100)
+        let n6 = Int(Int32.max) - randomSource(100)
+        let n7 = Int(Int32.max) - randomSource(100)
         let task5 = calcProcess(n5, "x", n6, "x", n7)
         XCTAssertNotNil(task5.status, "Error on integer overflow: \(task5.input)")
         
