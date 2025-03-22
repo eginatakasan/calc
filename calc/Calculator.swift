@@ -6,49 +6,49 @@ class Calculator {
     var currentResult = 0
 
     /// Perform Addition
-    func add(no1: Int, no2: Int) -> Int {
-        return no1 + no2
+    func add(a: Int, b: Int) -> Int {
+        return a + b
     }
 
     /// Perform Subtraction
-    func subtract(no1: Int, no2: Int) -> Int {
-        return no1 - no2
+    func subtract(a: Int, b: Int) -> Int {
+        return a - b
     }
 
     /// Perform Multiplication
-    func multiply(no1: Int, no2: Int) -> Int {
-        return no1 * no2
+    func multiply(a: Int, b: Int) -> Int {
+        return a * b
     }
 
     /// Perform Division
-    func divide(no1: Int, no2: Int) throws -> Int {
-        if no2 == 0 {
+    func divide(a: Int, b: Int) throws -> Int {
+        if b == 0 {
             throw CalculatorError.divisionByZero
         }
-        return no1 / no2
+        return a / b
     }
 
     /// Perform Modulus
-    func modulus(no1: Int, no2: Int) throws -> Int {
-        if no2 == 0 {
+    func modulus(a: Int, b: Int) throws -> Int {
+        if b == 0 {
             throw CalculatorError.divisionByZero
         }
-        return no1 % no2
+        return a % b
     }
 
-    func performOperation(no1: Int, no2: Int, operator: String) throws -> Int {
+    func performOperation(a: Int, b: Int, operator: String) throws -> Int {
         do {
             switch `operator` {
             case "x":
-                return multiply(no1: no1, no2: no2)
+                return multiply(a: a, b: b)
             case "/":
-                return try divide(no1: no1, no2: no2)
+                return try divide(a: a, b: b)
             case "%":
-                return try modulus(no1: no1, no2: no2)
+                return try modulus(a: a, b: b)
             case "+":
-                return add(no1: no1, no2: no2)
+                return add(a: a, b: b)
             case "-":
-                return subtract(no1: no1, no2: no2)
+                return subtract(a: a, b: b)
             default:
                 return 0
             }
@@ -93,7 +93,7 @@ class Calculator {
                 // print("iteration number \(i) \(numbers) \(operators)")
                 if operators[i] == "x" || operators[i] == "/" || operators[i] == "%" {
                     let result = try performOperation(
-                        no1: numbers[i], no2: numbers[i + 1], operator: operators[i])
+                        a: numbers[i], b: numbers[i + 1], operator: operators[i])
 
                     // print(result, numbers[i], numbers[i + 1], operators[i])
                     numbers[i] = result
@@ -112,7 +112,7 @@ class Calculator {
             for i in 0..<operators.count {
                 // print(finalResult, finalResult, numbers[i + 1], operators[i])
                 finalResult = try performOperation(
-                    no1: finalResult, no2: numbers[i + 1], operator: operators[i])
+                    a: finalResult, b: numbers[i + 1], operator: operators[i])
             }
 
             return String(finalResult)
